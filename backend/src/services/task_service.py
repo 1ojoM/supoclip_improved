@@ -359,6 +359,7 @@ class TaskService(ClipEditingMixin):
         workflow: str = "highlights",
         workflow_options: Optional[Dict[str, Any]] = None,
         idempotency: Optional[tuple[str, str]] = None,
+        split_part_id: Optional[str] = None,
     ) -> str:
         """
         Create a new task with associated source.
@@ -369,6 +370,13 @@ class TaskService(ClipEditingMixin):
         """
         self.reused_upload_task = False
         self.reused_upload_job_id = None
+        if split_part_id:
+            # Recheck while guard_source_creation holds the same lock used by
+            # cancellation cleanup; a preflight must not outlive its source.
+            from .video_split_service import owned_part
+            part = await owned_part(self.db, user_id, split_part_id)
+            if part is None or part["video_path"] != url:
+                raise ValueError("The selected video part is no longer available")
         # Validate user exists
         if not await self.task_repo.user_exists(self.db, user_id):
             raise ValueError(f"User {user_id} not found")

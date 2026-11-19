@@ -37,6 +37,10 @@ import {
   captionAt,
   captionKey,
   captionTransform,
+  editDuration,
+  hookRange,
+  outputSize,
+  resolvedHookStyle,
   clamp,
   replaceWords,
   setCaptionVisualSize,
@@ -45,9 +49,12 @@ import {
   type EditDocument,
   type CaptionStyle,
   type CaptionTransform,
+  type HookStyle,
   type EditorState,
 } from "@/lib/editor/document";
+import { hookTitleLayout } from "@/lib/editor/render";
 import { cn } from "@/lib/utils";
+import { applyCaptionStyle, captureCaptionStyle, parseCaptionStyle, CAPTION_STYLE_STORAGE_KEY, type CaptionStylePreset } from "@/lib/editor/caption-style";
 import { editorMessage, Field, Panel, Range, Section } from "./studio-ui";
 import { BRollPanel } from "./broll-panel";
 export type InspectorTab = "captions" | "framing" | "broll" | "audio" | "effects";
@@ -119,7 +126,7 @@ interface Props {
   editTime: number;
   seek: (value: number) => void;
   update: (change: (doc: EditDocument) => EditDocument, group?: string) => void;
-  applyAll: (style: CaptionStyle) => Promise<void>;
+  applyAll: (style: CaptionStylePreset) => Promise<void>;
   endpoint: string;
   brollId: string | null;
   selectBroll: (id: string | null) => void;
@@ -148,6 +155,26 @@ export function Inspector({
     [applying, setApplying] = useState(false);
   const caption = (change: Partial<CaptionStyle>, group = "caption-style") =>
     update((d) => ({ ...d, captions: { ...d.captions, ...change } }), group);
+  const hookStyle = resolvedHookStyle(doc);
+  const hookPlacement = textTransform(doc, "hook");
+  const output = outputSize(doc, asset.width, asset.height);
+  const hookLayout = hookTitleLayout(doc, output.width, output.height);
+  const hook = (change: Partial<HookStyle>) => update(current => {
+    const layout = hookTitleLayout(current, output.width, output.height);
+    const size = current.hookStyle?.size ?? clamp(layout.px / textTransform(current, "hook").scale * 1080 / output.width, 5, 528);
+    return { ...current, hookStyle: { ...resolvedHookStyle(current), size, ...change } };
+  }, "hook-style");
+  const timing = hookRange(doc);
+  const setHookTime = (edge: "start" | "end", value: number) => {
+    if (!Number.isFinite(value)) return;
+    update(current => {
+      const range = hookRange(current), duration = editDuration(current);
+      return { ...current, hookTiming: edge === "start"
+        ? { start: clamp(value, 0, range.end - .04), end: range.end }
+        : { start: range.start, end: clamp(value, range.start + .04, duration) } };
+    }, `hook-time:${edge}`);
+  };
+
   return (
     <Panel
       aria-label={t("inspector.tools")}
@@ -323,8 +350,8 @@ export function Inspector({
                   onClick={() => {
                     try {
                       localStorage.setItem(
-                        "supoclip-caption-style",
-                        JSON.stringify(doc.captions),
+                        CAPTION_STYLE_STORAGE_KEY,
+                        JSON.stringify(captureCaptionStyle(doc, editTime)),
                       );
                       toast.success(t("captions.saved"));
                     } catch {
@@ -340,12 +367,11 @@ export function Inspector({
                   variant="outline"
                   onClick={() => {
                     try {
-                      const style = JSON.parse(
-                        localStorage.getItem("supoclip-caption-style") ||
-                          "null",
-                      );
-                      if (style?.font && style?.size) caption(style);
-                      else toast.info(t("captions.saveFirst"));
+                      const stored = localStorage.getItem(CAPTION_STYLE_STORAGE_KEY);
+                      if (!stored) { toast.info(t("captions.saveFirst")); return; }
+                      const preset = parseCaptionStyle(JSON.parse(stored));
+                      if (!preset) { toast.error(t("captions.loadFailed")); return; }
+                      update(current => applyCaptionStyle(current, preset), "caption-load-style");
                     } catch {
                       toast.error(t("captions.loadFailed"));
                     }
@@ -355,13 +381,25 @@ export function Inspector({
                 </Button>
                 <Button
                   size="sm"
+                  variant="outline"
+                  className="col-span-2"
+                  title={t("captions.applyPhrasesDescription")}
+                  onClick={() => {
+                    update(current => applyCaptionStyle(current, captureCaptionStyle(current, editTime)), "caption-apply-phrases");
+                    toast.success(t("captions.phrasesApplied"));
+                  }}
+                >
+                  {t("captions.applyPhrases")}
+                </Button>
+                <Button
+                  size="sm"
                   variant="secondary"
                   className="col-span-2"
                   disabled={applying}
                   onClick={async () => {
                     setApplying(true);
                     try {
-                      await applyAll(doc.captions);
+                      await applyAll(captureCaptionStyle(doc, editTime));
                     } finally {
                       setApplying(false);
                     }
@@ -373,7 +411,8 @@ export function Inspector({
             </Section>
             <Section
               title={t("captions.hookTitle")}
-              description={t("captions.hookDescription")}
+              description={t("hookSettings.description")}
+              action={<Switch aria-label={t("hookSettings.show")} checked={hookStyle.enabled} onCheckedChange={enabled => hook({ enabled })} />}
             >
               <Input
                 aria-label={t("captions.hookTitle")}
@@ -385,6 +424,46 @@ export function Inspector({
                   update((d) => ({ ...d, hookTitle }), "hook-title");
                 }}
               />
+              <Field label={t("captions.font")}>
+                <Select value={hookStyle.font} onValueChange={font => hook({ font: font as HookStyle["font"] })}>
+                  <SelectTrigger aria-label={t("hookSettings.font")} className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TikTokSans-Regular">TikTok Sans</SelectItem>
+                    <SelectItem value="TikTokSans-Bold">TikTok Sans Bold</SelectItem>
+                    <SelectItem value="Poppins-ExtraBold">Poppins Extra Bold</SelectItem>
+                    <SelectItem value="THEBOLDFONT">The Bold Font</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Range label={t("hookSettings.size")} value={Math.round(hookLayout.px * 1080 / output.width)} min={5} max={528}
+                onChange={size => update(current => {
+                  const before = hookTitleLayout(current, output.width, output.height);
+                  const transform = textTransform(current, "hook");
+                  const next = { ...current, hookStyle: { ...resolvedHookStyle(current), size }, textTransforms: { ...current.textTransforms, hook: { ...transform, scale: 1 } } };
+                  const after = hookTitleLayout(next, output.width, output.height);
+                  const beforeCenter = before.top + before.lines.length * before.px * .6;
+                  const afterCenter = after.top + after.lines.length * after.px * .6;
+                  return { ...next, textTransforms: { ...next.textTransforms, hook: { ...next.textTransforms.hook, y: clamp(transform.y + (beforeCenter - afterCenter) / output.height, -1, 1) } } };
+                }, "hook-size")} />
+              <Range label={t("hookSettings.horizontal")} value={Math.round((.5 + hookPlacement.x) * 100)} min={0} max={100} unit="%"
+                onChange={x => update(current => ({ ...current, textTransforms: { ...current.textTransforms, hook: { ...textTransform(current, "hook"), x: x / 100 - .5 } } }), "hook-x")} />
+              <Range label={t("hookSettings.vertical")} value={Math.round(clamp((hookLayout.top + hookLayout.lines.length * hookLayout.px * .6) / output.height * 100, 0, 100))} min={0} max={100} unit="%"
+                onChange={y => update(current => {
+                  const layout = hookTitleLayout(current, output.width, output.height);
+                  const transform = textTransform(current, "hook");
+                  const delta = y / 100 - (layout.top + layout.lines.length * layout.px * .6) / output.height;
+                  return { ...current, textTransforms: { ...current.textTransforms, hook: { ...transform, y: clamp(transform.y + delta, -1, 1) } } };
+                }, "hook-y")} />
+              <div className="grid grid-cols-2 gap-3">
+                <ColorField label={t("captions.text")} inputLabel={t("hookSettings.textColor")} value={hookStyle.color} onChange={color => hook({ color })} />
+                <ColorField label={t("captions.highlight")} inputLabel={t("hookSettings.accentColor")} value={hookStyle.accent} onChange={accent => hook({ accent })} />
+              </div>
+              <SwitchRow id="hook-background" label={t("hookSettings.background")} checked={hookStyle.background} onChange={background => hook({ background })} />
+              <SwitchRow id="hook-uppercase" label={t("hookSettings.uppercase")} checked={hookStyle.uppercase} onChange={uppercase => hook({ uppercase })} />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("hookSettings.start")}><Input type="number" min={0} max={timing.end - .04} step={.1} aria-label={t("hookSettings.start")} value={Number(timing.start.toFixed(2))} onChange={event => setHookTime("start", Number(event.target.value))} /></Field>
+                <Field label={t("hookSettings.end")}><Input type="number" min={timing.start + .04} max={editDuration(doc)} step={.1} aria-label={t("hookSettings.end")} value={Number(timing.end.toFixed(2))} onChange={event => setHookTime("end", Number(event.target.value))} /></Field>
+              </div>
             </Section>
             <Section
               title={

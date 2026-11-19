@@ -26,6 +26,7 @@ from arq import cron  # noqa: E402
 from arq.connections import RedisSettings  # noqa: E402
 
 from ..config import Config  # noqa: E402
+from ..services.video_split_service import recover_video_splits  # noqa: E402
 from ..observability import configure_logging  # noqa: E402
 from ..cancellation_reviews.runner import process_cancellation_reviews  # noqa: E402
 from ..feedback.delivery import deliver_feedback_webhooks  # noqa: E402
@@ -62,6 +63,7 @@ class CronWorkerSettings:
     job_timeout = 3600
     health_check_interval = 30
     cron_jobs = [
+        scheduled(recover_video_splits, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55}, run_at_startup=True),
         scheduled(check_media_storage, second=20, run_at_startup=True, timeout=120),
         scheduled(replicate_pending_media, second=40, run_at_startup=True, timeout=1800),
         scheduled(

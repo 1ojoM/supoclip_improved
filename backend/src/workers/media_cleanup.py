@@ -313,6 +313,19 @@ async def sweep_local_caches(storage: MediaStorage) -> None:
     await run_in_thread(storage.sweep_cache)
     await run_in_thread(storage.sync_source_metadata)
     await run_in_thread(storage.sweep_editor_cache)
+    # A machine that died during cancellation may retain its private download
+    # directory. Only this machine's scratch is removed, after its lease ages.
+    async with AsyncSessionLocal() as db:
+        active = set((await db.execute(text("""
+            SELECT id FROM video_splits WHERE status IN ('queued', 'processing', 'cancelling')
+              AND updated_at > NOW() - INTERVAL '15 minutes'
+        """))).scalars())
+    root = Path(storage.config.temp_dir) / "split-work"
+    if root.is_dir():
+        import shutil
+        for folder in root.iterdir():
+            if folder.is_dir() and folder.name not in active and folder.stat().st_mtime < time.time() - 900:
+                await run_in_thread(shutil.rmtree, folder, True)
 
 
 async def delete_orphaned_editor_sessions(db, storage: MediaStorage) -> int:
@@ -398,6 +411,7 @@ async def _upload_still_unreferenced(db, video_path: str | None) -> bool:
             JOIN tasks t ON t.source_id = s.id
             WHERE s.url = :path
         )
+        OR EXISTS (SELECT 1 FROM video_split_parts WHERE video_path = :path)
     """), {"path": video_path})
     return not bool(referenced.scalar())
 
@@ -438,6 +452,9 @@ async def _expire_finished_upload_sessions(db, storage) -> None:
               SELECT 1 FROM sources s
               JOIN tasks t ON t.source_id = s.id
               WHERE s.url = media_upload_sessions.video_path
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM video_split_parts WHERE video_path = media_upload_sessions.video_path
           )
     """))).all()
     # Release this read before waiting on a task create. The locked re-check

@@ -421,6 +421,13 @@ def build_hook_title_ass(
     outline/backing for contrast, power words and numbers in the template's
     highlight colour, and a quick fade+pop entrance.
     """
+    bold = 1
+    if editor_style is not None:
+        template = editor_style.get("template", template)
+        if editor_style.get("font_name"):
+            effective_hook_font, template = ensure_glyph_coverage(editor_style["font_name"], template, [hook_title])
+            font_name = ass_font_name(effective_hook_font)
+            bold = 0 if effective_hook_font == "TikTokSans-Regular" else 1
     uppercase = bool(template.get("uppercase"))
     title_text = hook_title.upper() if uppercase else hook_title
 
@@ -446,7 +453,7 @@ def build_hook_title_ass(
     if longest > max_chars:
         fitted = int(usable_width / (longest * 0.52))
         hook_px = min(base_px, max(1, fitted))
-        if editor_style is not None:
+        if editor_style is not None and "template" not in editor_style:
             hook_px = max(30, hook_px)
     original_px = hook_px
     if editor_style is not None:
@@ -467,7 +474,7 @@ def build_hook_title_ass(
 
     style_line = (
         f"Style: Hook,{font_name},{hook_px},{primary},&H000000FF,{outline},{back_color},"
-        f"1,0,0,0,100,100,0,0,{border_style},{outline_px},{shadow_px},8,60,60,{margin_v},1"
+        f"{bold},0,0,0,100,100,0,0,{border_style},{outline_px},{shadow_px},8,60,60,{margin_v},1"
     )
 
     # Accent power words / numbers in the template highlight colour.

@@ -6,6 +6,14 @@ Add a line here when a pull request changes something a user can see. Use **New*
 
 ## 2026-11-18
 
+- **Improved:** Customize hook titles independently: font, size, position, text and accent colours, background, uppercase text, visibility and display timing. Preview and exports use the same settings. ([Feature commit](https://github.com/1ojoM/supoclip_improved/commit/3568473850dd9b5607ec3bd0fbafa5a8494d85a3))
+
+- **Fixed:** Applying subtitle styles no longer hides captions or restores old phrase positions. Applying to all clips now includes position and visible size. ([Feature commit](https://github.com/1ojoM/supoclip_improved/commit/3568473850dd9b5607ec3bd0fbafa5a8494d85a3))
+
+- **Improved:** Save and load the complete subtitle style, including position and visible size, and apply the current phrase’s style to every phrase in a clip. Older saved styles still load. ([Feature commit](https://github.com/1ojoM/supoclip_improved/commit/3568473850dd9b5607ec3bd0fbafa5a8494d85a3))
+
+- **New:** Choose numbered sections of a long video with draggable timeline handles and a part-count selector. Cut only the selected sections using fast stream copy without re-encoding, cancel a split and clear its unfinished work, delete individual sections, or use finished sections for clip generation. ([Feature commit](https://github.com/1ojoM/supoclip_improved/commit/3568473850dd9b5607ec3bd0fbafa5a8494d85a3))
+
 - **New:** After you subscribe or change plans, your plan card on Settings turns into a thank-you note with a colourful wave, and back into your upgraded plan when you click Done. ([#440](https://github.com/FujiwaraChoki/supoclip/pull/440))
 - **Fixed:** The MCP tool for waiting on a generation returns by the requested timeout, even when the next status check is delayed or the API stalls. ([#442](https://github.com/FujiwaraChoki/supoclip/pull/442))
 - **Improved:** SupoClip's new source license allows noncommercial self-hosting and forks. Internal business use, paid hosting, and other commercial use require written permission. The website footer links to the license, and Settings → About links to the original project and website. ([#441](https://github.com/FujiwaraChoki/supoclip/pull/441))

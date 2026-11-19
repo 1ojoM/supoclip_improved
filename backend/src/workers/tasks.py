@@ -11,6 +11,7 @@ from ..repositories.task_run_guard import TaskRunBusy
 from ..youtube_proxy_trial import run_trial_job
 
 from ..observability import configure_logging, set_trace_id, set_user_id
+from ..services.video_split_service import process_video_split
 
 configure_logging()
 
@@ -345,6 +346,7 @@ class WorkerSettings:
     # Functions to run
     functions = [
         process_video_task,
+        func(process_video_split, timeout=24 * 3600, max_tries=1),
         prepare_editor,
         export_editor,
         combine_editor,
