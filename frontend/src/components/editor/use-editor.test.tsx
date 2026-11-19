@@ -245,3 +245,18 @@ it("rebuilds the editing copy with the revision it shows and loads the fresh dra
   expect(result.current.canUndo).toBe(false);
   expect(JSON.parse(storage.get("supoclip-editor:/test/editor")!).history.present.volume).toBe(0.75);
 });
+
+it("does not restore stale phrase offsets when a loaded style changes words per caption", async () => {
+  const { applyCaptionStyle, captureCaptionStyle } = await import("@/lib/editor/caption-style");
+  const { captionAt, captionKey } = await import("@/lib/editor/document");
+  const initial = { ...draft, captions: { ...draft.captions, wordsPerLine: 1 }, captionTransforms: {} };
+  const original = { ...initial, captionTransforms: { [captionKey(initial, captionAt(initial, .25)!)]: { x: 1, y: -1, scale: 1 } } };
+  vi.stubGlobal("localStorage", { getItem: () => null, setItem: vi.fn() });
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ status: "ready", basis: "clip.mp4", draft: { revision: 0, document: original }, original })));
+  const { result } = renderHook(() => useEditor("/test/editor-style"));
+  await waitFor(() => expect(result.current.document).not.toBeNull());
+  act(() => result.current.update(document => applyCaptionStyle(document, captureCaptionStyle(draft, .25))));
+  expect(result.current.document?.captions.wordsPerLine).toBe(4);
+  expect(result.current.document?.captionTransforms).toEqual({});
+  expect(result.current.document?.captions.enabled).toBe(true);
+});

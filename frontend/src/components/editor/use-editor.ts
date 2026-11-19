@@ -37,6 +37,8 @@ function upgradeCachedHistory(history: History, server: EditDocument): History {
     ...document,
     // Missing means this cache predates editable B-roll; [] is an intentional removal.
     broll: structuredClone(document.broll ?? server.broll ?? []),
+    ...(document.hookStyle !== undefined || server.hookStyle !== undefined
+      ? { hookStyle: structuredClone(document.hookStyle ?? null) } : {}),
     ...(document.hookTiming !== undefined || server.hookTiming !== undefined
       ? { hookTiming: structuredClone(document.hookTiming ?? null) } : {}),
     // Missing placement fields mean the original layout, including in old undo
@@ -94,7 +96,8 @@ export function useEditor(endpoint: string) {
       const current = historyRef.current;
       if (!current) return;
       const changed = change(current.present);
-      const next = changed.words !== current.present.words || changed.captions.wordsPerLine !== current.present.captions.wordsPerLine
+      const next = changed.captionTransforms === current.present.captionTransforms &&
+        (changed.words !== current.present.words || changed.captions.wordsPerLine !== current.present.captions.wordsPerLine)
         ? remapCaptionTransforms(current.present, changed) : changed;
       if (JSON.stringify(next) === JSON.stringify(current.present)) return;
       const coalesce =

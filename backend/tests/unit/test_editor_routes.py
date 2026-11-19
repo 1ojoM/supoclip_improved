@@ -328,3 +328,15 @@ async def test_a_truncated_session_is_reported(client, editor_store, monkeypatch
 
     monkeypatch.setattr(clip_source_map, "load_clip_source_ranges", lambda _path: [(0.0, 2.0)])
     assert "sourceIncomplete" not in (await http.get("/tasks/task/clips/clip/editor")).json()
+
+
+async def test_hook_settings_survive_save_and_reload_without_changing_captions(client):
+    http, service, doc, directory = client
+    original_captions = dict(doc["captions"])
+    doc["hookTitle"] = "Independent title"
+    doc["hookStyle"] = {"enabled": True, "font": "THEBOLDFONT", "size": 80, "color": "#FF0000", "accent": "#00FF00", "background": True, "uppercase": True}
+    saved = await http.patch("/tasks/task/clips/clip/editor", json={"basis": "clip.mp4", "revision": 0, "document": doc})
+    assert saved.status_code == 200
+    reloaded = (await http.get("/tasks/task/clips/clip/editor")).json()["draft"]["document"]
+    assert reloaded["hookStyle"] == doc["hookStyle"]
+    assert reloaded["captions"] == original_captions

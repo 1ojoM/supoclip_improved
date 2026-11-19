@@ -50,6 +50,8 @@ import {
 import { detectWorkflowIntent, looksLikeInstruction, splitSourceAndInstructions, type WorkflowIntent } from "@/lib/workflow-intent";
 import { cn } from "@/lib/utils";
 import { FontSelectOption, type FontOption } from "@/components/font-select-option";
+import { VideoPartPicker } from "@/components/video-part-picker";
+import { videoTime, type SelectedVideoPart } from "@/lib/video-splits";
 
 interface CaptionTemplate {
   id: string;
@@ -143,12 +145,13 @@ export default function HomeApp() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [selectedPart, setSelectedPart] = useState<SelectedVideoPart | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const urlInputRef = useRef<HTMLInputElement | null>(null);
   const { data: session, isPending } = useSession();
-  const sourceType: "youtube" | "upload" = file ? "upload" : "youtube";
+  const sourceType: "youtube" | "upload" = file || selectedPart ? "upload" : "youtube";
 
   // Font customization states — null means "use the caption template's own value"
   const [fontFamily, setFontFamily] = useState<string | null>(null);
@@ -195,6 +198,12 @@ export default function HomeApp() {
   // Per workflow: settings mean different things in each, and switching back keeps them.
   const [advancedByWorkflow, setAdvancedByWorkflow] = useState<Partial<Record<Workflow, AdvancedValues>>>({});
   const [sourceSeconds, setSourceSeconds] = useState<number | null>(null);
+  const selectVideoPart = useCallback((part: SelectedVideoPart | null) => {
+    setSelectedPart(part);
+    setFile(null);
+    setSourceSeconds(part?.duration_seconds ?? null);
+    setError(null);
+  }, []);
   const [rescue, setRescue] = useState<UrlRescue | null>(null);
   const [suggestion, setSuggestion] = useState<WorkflowIntent | null>(null);
   const topicInputRef = useRef<HTMLInputElement | null>(null);
@@ -406,6 +415,7 @@ export default function HomeApp() {
       return;
     }
     setError(null);
+    setSelectedPart(null);
     setFile(next);
     // The length is only used for a hint, so it is read in the background.
     durationFile.current = next;
@@ -612,7 +622,7 @@ export default function HomeApp() {
   const upgradeState = billingSummary?.monetization_enabled ? getUpgradeState(billingSummary) : null;
   // Users can explore every option; the plan prompt only appears when they hit Generate.
   const controlsDisabled = isLoading;
-  const hasSource = sourceType === "upload" ? Boolean(file) : Boolean(url.trim());
+  const hasSource = sourceType === "upload" ? Boolean(file || selectedPart) : Boolean(url.trim());
   const cleanupCount = [cutLongPauses, removeFillerWords, filteredWords.trim().length > 0].filter(Boolean).length;
   const customized = fontFamily !== null || fontSize !== null || fontColor !== null;
   // Series, recap and trailer lengths are per generation; only the clip length is saved.
@@ -715,7 +725,7 @@ export default function HomeApp() {
     if (!hasSource || isLoading || lengthLoading || !session?.user?.id || awaitingWorkflows) return;
     // Clicking Generate first blurs the link box; if that blur just held a request back, let the user see it.
     if (heldAt.current > 0 && performance.now() - heldAt.current < 800) return;
-    let sourceUrl = url;
+    let sourceUrl = selectedPart?.video_path ?? url;
     let requestInstructions = instructions;
     if (sourceType !== "upload") {
       const rescued = rescueSource(url);
@@ -772,7 +782,11 @@ export default function HomeApp() {
       }
 
       const request: Record<string, unknown> = {
-        source: { url: videoUrl, title: sourceType === "upload" && file?.name ? file.name.slice(0, 500) : null },
+        source: {
+          url: videoUrl,
+          title: sourceType === "upload" && file?.name ? file.name.slice(0, 500) : null,
+          ...(selectedPart ? { split_part_id: selectedPart.id } : {}),
+        },
         font_options: fontOptions,
         caption_template: captionTemplate,
         processing_mode: "fast",
@@ -902,6 +916,7 @@ export default function HomeApp() {
             </section>
           )}
 
+          <VideoPartPicker selectedId={selectedPart?.id} requestedId={searchParams.get("splitPart")} disabled={controlsDisabled} onSelect={selectVideoPart} />
           <form
             noValidate
             onSubmit={handleSubmit}
@@ -936,7 +951,16 @@ export default function HomeApp() {
             )}
 
             <div className="flex items-start gap-3 p-3 pb-2 sm:p-4 sm:pb-2">
-              {file ? (
+              {selectedPart ? (
+                <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-muted/60 p-2 pr-3">
+                  <FileVideo className="size-5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{t("videoSplit.part", { number: selectedPart.part_number })} · {selectedPart.title}</p>
+                    <p className="text-xs text-muted-foreground">{videoTime(selectedPart.duration_seconds)}</p>
+                  </div>
+                  <button type="button" disabled={controlsDisabled} aria-label={t("removeFile")} onClick={() => { selectVideoPart(null); router.replace("/", { scroll: false }); }} className="rounded-md p-1 hover:bg-background"><X className="size-4" /></button>
+                </div>
+              ) : file ? (
                 <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-muted/60 p-2 pr-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"><FileVideo className="size-5" /></span>
                   <div className="min-w-0 flex-1">

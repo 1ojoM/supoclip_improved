@@ -29,6 +29,15 @@ export interface CaptionStyle {
   /** Caption template the clip was generated with; supplies its animation and outline. */
   template?: string;
 }
+export interface HookStyle {
+  enabled: boolean;
+  font: CaptionStyle["font"];
+  size: number;
+  color: string;
+  accent: string;
+  background: boolean;
+  uppercase: boolean;
+}
 /** Template styling the editor's own caption controls don't cover. */
 export interface CaptionLook {
   animation: "none" | "karaoke" | "pop" | "fade" | "bounce";
@@ -97,6 +106,8 @@ export interface EditDocument {
   muted: boolean;
   /** Headline shown at the top for the first seconds; absent on very old drafts. */
   hookTitle?: string;
+  /** Independent title styling. Absent preserves the generated title's look. */
+  hookStyle?: HookStyle | null;
   /** Hook visibility in edited/output seconds. Missing preserves the generated default. */
   hookTiming?: { start: number; end: number } | null;
   /** Normalized offsets from the original text anchors; independent font scales. */
@@ -111,6 +122,10 @@ export interface TextTransform { x: number; y: number; scale: number }
 export interface CaptionTransform extends TextTransform { size?: number | null }
 export const textTransform = (doc: EditDocument, layer: TextLayer): TextTransform =>
   doc.textTransforms?.[layer] ?? { x: 0, y: 0, scale: 1 };
+export const resolvedHookStyle = (doc: EditDocument): HookStyle => doc.hookStyle ?? {
+  enabled: true, font: doc.captions.font, size: Math.max(34, Math.min(66, Math.floor(doc.captions.size * .82))),
+  color: doc.captions.color, accent: doc.captions.accent, background: false, uppercase: doc.captions.uppercase ?? false,
+};
 /** Keep the inspector's size in output units, including extreme legacy base sizes. */
 export function setCaptionVisualSize(doc: EditDocument, size: number, captionId?: string): EditDocument {
   size = clamp(size, 5, 528);

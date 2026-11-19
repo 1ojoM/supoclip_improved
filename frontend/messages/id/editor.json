@@ -104,7 +104,10 @@
     "wordStart": "Awal kata {n}",
     "wordEnd": "Akhir kata {n}",
     "newWord": "Baru",
-    "addWord": "Tambah kata di playhead"
+    "addWord": "Tambah kata di playhead",
+    "applyPhrases": "Terapkan ke semua frasa",
+    "applyPhrasesDescription": "Terapkan seluruh gaya, posisi, dan ukuran subtitle frasa saat ini ke seluruh klip.",
+    "phrasesApplied": "Gaya diterapkan ke semua frasa"
   },
   "framing": {
     "title": "Framing",
@@ -402,5 +405,19 @@
     "backupsNothing": "Tidak ada yang bisa dihapus. Perubahan yang belum tersimpan tetap ada sampai masuk ke akunmu.",
     "backupsBrowserNote": "Menghapus data situs SupoClip di browser ini juga menghapus salinan ini dan membuatmu keluar. Lakukan hanya jika semua klip yang terbuka menampilkan “Semua perubahan tersimpan”.",
     "done": "Selesai"
+  },
+  "hookSettings": {
+    "description": "Atur judul secara terpisah dari subtitle. Sesuaikan waktu tampil di bawah atau pada linimasa.",
+    "show": "Tampilkan judul",
+    "font": "Font judul",
+    "size": "Ukuran judul",
+    "horizontal": "Posisi horizontal judul",
+    "vertical": "Posisi vertikal judul",
+    "textColor": "Warna teks judul",
+    "accentColor": "Warna sorotan judul",
+    "background": "Latar judul",
+    "uppercase": "Judul huruf besar",
+    "start": "Awal judul (detik)",
+    "end": "Akhir judul (detik)"
   }
 }

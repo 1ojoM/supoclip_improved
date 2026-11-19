@@ -1287,9 +1287,9 @@ def materialize_clip_source(
     return render_path
 
 
-def cached_full_media(video_id: str, quality: Optional[str] = None) -> Optional[Path]:
+def cached_full_media(video_id: str, quality: Optional[str] = None, *, config=None) -> Optional[Path]:
     """Return a fresh cached full download at or above ``quality``, if stored."""
-    runtime = get_config()
+    runtime = config or get_config()
     if not getattr(runtime, "youtube_source_cache", True):
         return None
     sweep_expired_cache(runtime)

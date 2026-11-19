@@ -47,8 +47,8 @@ import {
   outputTime,
   splitSegment,
   timecode,
-  type CaptionStyle,
 } from "@/lib/editor/document";
+import { applyCaptionStyle, type CaptionStylePreset } from "@/lib/editor/caption-style";
 import { cn } from "@/lib/utils";
 import type { TextDraft } from "@/lib/editor/render";
 import { editorRequest, useEditor } from "./use-editor";
@@ -169,8 +169,9 @@ export function EditorWorkspace({
     }
     onSelect(id);
   };
-  const applyAll = async (style: CaptionStyle) => {
+  const applyAll = async (style: CaptionStylePreset) => {
     try {
+      editor.update(current => applyCaptionStyle(current, style), "caption-apply-clips");
       await editor.save();
       for (const c of clips) {
         if (c.id === clip.id) continue;
@@ -179,7 +180,7 @@ export function EditorWorkspace({
         await editorRequest(url, "PATCH", {
           basis: state.basis,
           revision: state.draft.revision,
-          document: { ...state.draft.document, captions: style },
+          document: applyCaptionStyle(state.draft.document, style),
         });
       }
       toast.success(t("workspace.styleApplied"));

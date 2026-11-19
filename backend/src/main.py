@@ -188,6 +188,8 @@ def create_app(
         )
 
     app.include_router(tasks.router)
+    from .api.routes.video_splits import router as video_split_router
+    app.include_router(video_split_router)
     from .api.routes.clip_exports import router as clip_export_router
     from .api.routes.editor import router as editor_router
     app.include_router(clip_export_router)

@@ -4,6 +4,16 @@ What changed in SupoClip for people using the product. Newest dates are first.
 
 Add a line here when a pull request changes something a user can see. Use **New**, **Improved**, **Fixed**, or **Under the hood**, describe the change in plain language, and link the pull request. Skip internal-only work, or fold it into one **Under the hood** line. Do not include customer names, email addresses, user IDs, or anything else private.
 
+## 2026-11-18
+
+- **Improved:** Customize hook titles independently: font, size, position, text and accent colours, background, uppercase text, visibility and display timing. Preview and exports use the same settings. ([PR pending](https://github.com/FujiwaraChoki/supoclip/pulls))
+
+- **Fixed:** Applying subtitle styles no longer hides captions or restores old phrase positions. Applying to all clips now includes position and visible size. ([PR pending](https://github.com/FujiwaraChoki/supoclip/pulls))
+
+- **Improved:** Save and load the complete subtitle style, including position and visible size, and apply the current phrase’s style to every phrase in a clip. Older saved styles still load. ([PR pending](https://github.com/FujiwaraChoki/supoclip/pulls))
+
+- **New:** Choose numbered sections of a long video with draggable timeline handles and a part-count selector. Cut only the selected sections using fast stream copy without re-encoding, cancel a split and clear its unfinished work, delete individual sections, or use finished sections for clip generation. ([PR pending](https://github.com/FujiwaraChoki/supoclip/pulls))
+
 ## 2026-11-12
 
 - **Fixed:** Opening several clips in the studio at once no longer leaves one of them shorter than the clip. If the whole source can't be fetched, the studio says so instead of opening part of it. A clip that already opened short shows the problem and offers to rebuild its editing copy; your earlier draft stays downloadable. ([#379](https://github.com/FujiwaraChoki/supoclip/pull/379))

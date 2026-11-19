@@ -196,6 +196,26 @@ it("states the upload limit and rejects a file over it before upload", async () 
   expect(screen.queryByText(/over the 2 GB upload limit/)).not.toBeInTheDocument();
 });
 
+it("uses an existing split part without uploading or validating it as a web link", async () => {
+  const partId = "b31caa2a-9d8e-4db3-a7e0-0667cb83bad6";
+  navigation.params = new URLSearchParams({ splitPart: partId });
+  const defaultFetch = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    if (String(input) === "/api/video-splits") return Response.json({ splits: [{
+      id: "split-1", title: "Long recording", status: "completed", parts: [{
+        id: partId, part_number: 2, start_seconds: 5400, duration_seconds: 5400,
+        video_path: "upload://split-part.mp4",
+      }],
+    }] });
+    return defaultFetch(input, init);
+  });
+  render(<HomeApp />, { wrapper: TooltipProvider });
+  await screen.findByText("Part 2 · Long recording");
+  const body = await submit("Generate clips");
+  expect(body.source).toEqual({ url: "upload://split-part.mp4", title: null, split_part_id: partId });
+  expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes("/api/upload"))).toBe(false);
+});
+
 it("sends the caption defaults saved in Settings with a new task", async () => {
   const fetchMock = vi.mocked(fetch);
   const defaultFetch = fetchMock.getMockImplementation()!;

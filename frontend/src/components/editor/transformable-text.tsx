@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { clamp, textTransform, uid, type CaptionTransform, type EditDocument, type TextLayer } from "@/lib/editor/document";
+import { clamp, resolvedHookStyle, textTransform, uid, type CaptionTransform, type EditDocument, type TextLayer } from "@/lib/editor/document";
 import type { TextBounds, TextEditorLayout } from "@/lib/editor/render";
 import { keepTextInFrame, resizeTextScale, TEXT_CORNERS, type TextCorner } from "@/lib/editor/text-transform";
 import { InlineText } from "./inline-text";
@@ -64,18 +64,19 @@ export function TransformableText({ doc, layer, captionId, label, value, buttonL
     transform = keepTextInFrame(transform, nextBounds, width, height);
     update(current => withTransform(current), start.group);
   };
+  const style = layer === "hook" ? resolvedHookStyle(doc) : doc.captions;
   const scale = frame.current ? frame.current.getBoundingClientRect().width / width : 0.3;
   return <div role="group" aria-label={`${t("preview.region")}: ${label}`} className="group pointer-events-none absolute rounded-sm ring-1 ring-transparent hover:ring-sky-400 focus-within:ring-sky-400"
     style={{ left: `${bounds.x / width * 100}%`, top: `${bounds.y / height * 100}%`, width: `${bounds.width / width * 100}%`, height: `${bounds.height / height * 100}%` }}>
     <InlineText value={value} label={label} buttonLabel={buttonLabel} multiline maxLength={layer === "hook" ? 200 : 960}
       className="pointer-events-auto absolute inset-0 h-full w-full resize-none overflow-hidden cursor-text rounded-sm border border-transparent bg-transparent p-0 text-center outline-none hover:border-sky-400 focus:border-sky-400 focus:bg-transparent focus:ring-1 focus:ring-sky-400 selection:text-transparent selection:bg-sky-400/30"
-      style={{ color: doc.captions.color, fontFamily: `"Editor-${doc.captions.font}", sans-serif`, fontSize: Math.max(12, Math.min(bounds.height * 0.6, (placement(doc).size ?? doc.captions.size) * placement(doc).scale) * scale), lineHeight: "1.2", textTransform: doc.captions.uppercase ? "uppercase" : "none", textShadow: "0 1px 2px black" }}
+      style={{ color: style.color, fontFamily: `"Editor-${style.font}", sans-serif`, fontSize: Math.max(12, Math.min(bounds.height * 0.6, (placement(doc).size ?? style.size) * placement(doc).scale) * scale), lineHeight: "1.2", textTransform: style.uppercase ? "uppercase" : "none", textShadow: "0 1px 2px black" }}
       onBegin={pause} onCommit={onCommit}
       onEditing={setEditing}
       onDraft={onDraft}
       formatValue={formatValue}
       editorStyle={editorLayout ? {
-        color: "transparent", WebkitTextFillColor: "transparent", caretColor: doc.captions.color, textShadow: "none", borderColor: "transparent", boxShadow: "none",
+        color: "transparent", WebkitTextFillColor: "transparent", caretColor: style.color, textShadow: "none", borderColor: "transparent", boxShadow: "none",
         fontSize: editorLayout.fontSize * scale, lineHeight: `${editorLayout.lineHeight * scale}px`,
         fontWeight: 400, fontStyle: "normal", fontKerning: "normal", letterSpacing: "normal",
         width: editorLayout.wrapWidth * scale, left: "50%", transform: "translateX(-50%)",

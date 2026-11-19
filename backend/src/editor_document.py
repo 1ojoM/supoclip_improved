@@ -155,6 +155,16 @@ class CaptionTransform(TextTransform):
     size: float | None = Field(default=None, ge=5, le=528)
 
 
+class HookStyle(Model):
+    enabled: bool = True
+    font: Literal["TikTokSans-Regular", "TikTokSans-Bold", "Poppins-ExtraBold", "THEBOLDFONT"] = "TikTokSans-Regular"
+    size: float = Field(default=44, ge=5, le=528)
+    color: str = Field(default="#FFFFFF", pattern=r"^#[0-9a-fA-F]{6}$")
+    accent: str = Field(default="#FACC15", pattern=r"^#[0-9a-fA-F]{6}$")
+    background: bool = False
+    uppercase: bool = False
+
+
 class EditDocument(Model):
     version: Literal[1] = 1
     segments: list[Segment] = Field(min_length=1, max_length=100)
@@ -166,6 +176,7 @@ class EditDocument(Model):
     muted: bool = False
     # AI headline burned into the top safe area for the first seconds, as generated.
     hookTitle: str = Field(default="", max_length=200)
+    hookStyle: HookStyle | None = None
     hookTiming: HookTiming | None = None
     textTransforms: dict[Literal["hook", "captions"], TextTransform] = Field(default_factory=dict)
     captionTransforms: dict[Annotated[str, Field(max_length=300)], CaptionTransform] = Field(default_factory=dict, max_length=5000)
@@ -362,12 +373,26 @@ def write_ass(path: Path, document: EditDocument, width: int, height: int):
         hook_editor_style={
             **hook_transform.model_dump(),
             "base_px": max(34, min(66, int(original_font_px * 0.82))),
+            **({
+                "base_px": max(1, round(document.hookStyle.size * width / 1080)),
+                "font_name": document.hookStyle.font,
+                "template": {
+                    "font_color": document.hookStyle.color,
+                    "highlight_color": document.hookStyle.accent,
+                    "emphasis_color": document.hookStyle.accent,
+                    "uppercase": document.hookStyle.uppercase,
+                    "background_color": "#00000080" if document.hookStyle.background else None,
+                    "stroke_color": None if document.hookStyle.background else "#000000",
+                    "stroke_width": 0 if document.hookStyle.background else 3,
+                    "shadow": True, "word_pop": False,
+                },
+            } if document.hookStyle else {}),
             **(document.hookTiming.model_dump() if document.hookTiming else {}),
         },
         # Highlights are per occurrence and already include the generated emphasis.
         emphasis_indices=[i for i, w in enumerate(words) if w["highlight"]],
         wrap_lines=True,
-        hook_title=document.hookTitle.strip() or None,
+        hook_title=(document.hookTitle.strip() or None) if not document.hookStyle or document.hookStyle.enabled else None,
         caption_placements=placements,
     )
     if not written:

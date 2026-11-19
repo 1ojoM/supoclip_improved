@@ -104,7 +104,10 @@
     "wordStart": "Start von Wort {n}",
     "wordEnd": "Ende von Wort {n}",
     "newWord": "Neu",
-    "addWord": "Wort an der Abspielposition hinzufügen"
+    "addWord": "Wort an der Abspielposition hinzufügen",
+    "applyPhrases": "Auf alle Phrasen anwenden",
+    "applyPhrasesDescription": "Stil, Position und Größe der aktuellen Phrase auf den gesamten Clip anwenden.",
+    "phrasesApplied": "Stil auf alle Phrasen angewendet"
   },
   "framing": {
     "title": "Bildausschnitt",
@@ -402,5 +405,19 @@
     "backupsNothing": "Nichts zu entfernen. Nicht gespeicherte Änderungen bleiben, bis sie in deinem Konto sind.",
     "backupsBrowserNote": "Wenn du die Websitedaten von SupoClip in diesem Browser löschst, werden auch diese Kopien entfernt und du wirst abgemeldet. Tu das erst, wenn jeder offene Clip „Alle Änderungen gespeichert“ anzeigt.",
     "done": "Fertig"
+  },
+  "hookSettings": {
+    "description": "Gestalte den Titel unabhängig von Untertiteln. Lege seine Anzeigezeit hier oder auf der Zeitleiste fest.",
+    "show": "Titel anzeigen",
+    "font": "Titelschrift",
+    "size": "Titelgröße",
+    "horizontal": "Horizontale Titelposition",
+    "vertical": "Vertikale Titelposition",
+    "textColor": "Titelfarbe",
+    "accentColor": "Akzentfarbe des Titels",
+    "background": "Titelhintergrund",
+    "uppercase": "Titel in Großbuchstaben",
+    "start": "Titelbeginn (Sekunden)",
+    "end": "Titelende (Sekunden)"
   }
 }

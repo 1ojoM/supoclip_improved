@@ -104,7 +104,10 @@
     "wordStart": "Word {n} start",
     "wordEnd": "Word {n} end",
     "newWord": "New",
-    "addWord": "Add word at playhead"
+    "addWord": "Add word at playhead",
+    "applyPhrases": "Apply to all phrases",
+    "applyPhrasesDescription": "Apply the current phrase's full subtitle style, position and size throughout this clip.",
+    "phrasesApplied": "Style applied to all phrases"
   },
   "framing": {
     "title": "Framing",
@@ -402,5 +405,19 @@
     "backupsNothing": "Nothing to remove. Unsaved changes stay until they reach your account.",
     "backupsBrowserNote": "Clearing this browser's site data for SupoClip also removes these copies and signs you out. Only do that once every open clip says “All changes saved”.",
     "done": "Done"
+  },
+  "hookSettings": {
+    "description": "Style the title independently from subtitles. Drag its timeline edges or set when it appears below.",
+    "show": "Show hook title",
+    "font": "Hook title font",
+    "size": "Hook title size",
+    "horizontal": "Title horizontal position",
+    "vertical": "Title vertical position",
+    "textColor": "Title text color",
+    "accentColor": "Title highlight color",
+    "background": "Title background",
+    "uppercase": "Uppercase title",
+    "start": "Title start (seconds)",
+    "end": "Title end (seconds)"
   }
 }

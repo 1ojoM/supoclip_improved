@@ -7,7 +7,8 @@
     "agents": "Agents & API",
     "settings": "Settings",
     "admin": "Admin",
-    "newGeneration": "New generation"
+    "newGeneration": "New generation",
+    "split": "Split video"
   },
   "search": {
     "generations": "Search generations",

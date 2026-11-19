@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { captionGroups, captionKey, hookRange, mappedWords, outputSize, outputTime, replaceCaptionGroup, type EditDocument, type EditorState, type TextLayer } from "@/lib/editor/document";
+import { captionGroups, captionKey, resolvedHookStyle, hookRange, mappedWords, outputSize, outputTime, replaceCaptionGroup, type EditDocument, type EditorState, type TextLayer } from "@/lib/editor/document";
 import { drawEditorTextLayer, formatHookEditorText, loadEditorFont, prepareTextDraft, textEditorLayout, textLayerBounds, type TextBounds, type TextDraft, type TextEditorLayout } from "@/lib/editor/render";
 import { TransformableText } from "./transformable-text";
 
@@ -49,7 +49,7 @@ export function TextLayers({ doc, asset, time, index, videoRef, update, resoluti
       setLayouts({ hook: textEditorLayout(ctx, doc, size.width, size.height, at, "hook", draft), captions: textEditorLayout(ctx, doc, size.width, size.height, at, "captions", draft) });
     };
     refresh();
-    void loadEditorFont(doc.captions.font).then(refresh).catch(() => {});
+    void Promise.all([loadEditorFont(doc.captions.font), loadEditorFont(resolvedHookStyle(doc).font)]).then(refresh).catch(() => {});
     return () => { cancelled = true; };
   }, [doc, at, size.width, size.height, asset.captionLooks, draft]);
   useEffect(() => {

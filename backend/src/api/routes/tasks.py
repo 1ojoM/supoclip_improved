@@ -594,6 +594,16 @@ async def _create_task(request: Request, db: AsyncSession, attempt: SourceAttemp
     if not isinstance(raw_source, dict) or not isinstance(raw_source.get("url"), str) or not raw_source["url"].strip():
         raise HTTPException(status_code=400, detail="Source URL is required")
     user_id = await _get_user_id_from_headers(request, db)
+    if raw_source.get("split_part_id"):
+        from ...services.video_split_service import owned_part
+        part_id = raw_source["split_part_id"]
+        if not isinstance(part_id, str):
+            raise HTTPException(422, "Invalid video part")
+        part = await owned_part(db, user_id, part_id)
+        if part is None:
+            raise HTTPException(404, "Video part not found")
+        raw_source["url"] = part["video_path"]
+        raw_source["title"] = f"{part['title']} — Part {part['part_number']}"[:500]
     attempt.note_user(user_id)
     attempt.note_workflow(data.get("workflow"))
 
@@ -740,6 +750,7 @@ async def _create_task(request: Request, db: AsyncSession, attempt: SourceAttemp
                     upload_request_key=upload_request_key,
                     workflow=workflow_spec.workflow,
                     workflow_options=workflow_options,
+                    **({"split_part_id": raw_source["split_part_id"]} if raw_source.get("split_part_id") else {}),
                 )
             if getattr(task_service, "reused_upload_task", False):
                 return _queued_upload_task(

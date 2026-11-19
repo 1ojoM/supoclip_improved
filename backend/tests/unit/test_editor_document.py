@@ -445,3 +445,44 @@ def test_export_changes_one_caption_and_leaves_the_next_caption_unchanged(tmp_pa
     assert (after[1] + after[3] - before[1] - before[3]) / 2 == pytest.approx(-72, abs=4)
     assert (after[2] - after[0]) / (before[2] - before[0]) == pytest.approx(1.5, abs=.15)
     assert bounds(pixels("changed", 1.5)) == bounds(pixels("original", 1.5))
+
+
+def test_hook_style_round_trips_and_exports_independently(tmp_path):
+    from src.media.captions import ass_font_name
+    styled = document(hookTitle="Title 2026", hookStyle={
+        "font": "THEBOLDFONT", "size": 80, "color": "#FF0000", "accent": "#00FF00",
+        "background": True, "uppercase": True,
+    })
+    restored = EditDocument.model_validate(styled.model_dump())
+    assert restored.hookStyle == styled.hookStyle
+    path = tmp_path / "hook.ass"
+    write_ass(path, restored, 1080, 1920)
+    ass = path.read_text()
+    hook = next(line for line in ass.splitlines() if line.startswith("Style: Hook,")).split(",")
+    assert hook[1] == ass_font_name("THEBOLDFONT")
+    assert float(hook[2]) == 80
+    assert hook[3] == "&H000000FF&"
+    assert hook[15] == "3"  # independent backing box
+    assert "TITLE" in ass
+    assert restored.captions == styled.captions
+    assert "&H0000FF00" in ass
+    hidden = EditDocument.model_validate({**styled.model_dump(), "captions": {"enabled": False}, "hookStyle": {**styled.hookStyle.model_dump(), "enabled": False}})
+    write_ass(path, hidden, 1080, 1920)
+    assert "Style: Hook," not in path.read_text()
+
+
+@pytest.mark.parametrize("style", [{"size": 0}, {"size": float("nan")}, {"font": "unknown"}, {"color": "red"}])
+def test_invalid_hook_styles_are_rejected(style):
+    with pytest.raises(ValidationError):
+        document(hookStyle=style)
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg required")
+def test_custom_hook_renders_in_its_own_color_without_subtitles(tmp_path):
+    import numpy as np
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=black:s=640x360:r=24:d=2", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(tmp_path / "clean.mp4")], check=True)
+    styled = document(segments=[{"id": "s", "start": 0, "end": 2}], words=[], captions={"enabled": False, "color": "#00FF00"}, hookTitle="A red title", hookStyle={"size": 72, "color": "#FF0000", "accent": "#FF0000", "font": "TikTokSans-Regular"}, framing={"aspect": "original"})
+    render_document(tmp_path, "hook-style", styled, "tiktok")
+    raw = subprocess.check_output(["ffmpeg", "-v", "error", "-ss", "0.5", "-i", str(tmp_path / "export-hook-style.mp4"), "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"])
+    pixels = np.frombuffer(raw, dtype=np.uint8).reshape(360, 640, 3)
+    assert ((pixels[:, :, 0] > 120) & (pixels[:, :, 1] < 80) & (pixels[:, :, 2] < 80)).sum() > 20

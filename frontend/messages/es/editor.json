@@ -104,7 +104,10 @@
     "wordStart": "Inicio de la palabra {n}",
     "wordEnd": "Fin de la palabra {n}",
     "newWord": "Nueva",
-    "addWord": "Agregar palabra en el cursor"
+    "addWord": "Agregar palabra en el cursor",
+    "applyPhrases": "Aplicar a todas las frases",
+    "applyPhrasesDescription": "Aplicar el estilo, la posición y el tamaño de la frase actual a todo este clip.",
+    "phrasesApplied": "Estilo aplicado a todas las frases"
   },
   "framing": {
     "title": "Encuadre",
@@ -402,5 +405,19 @@
     "backupsNothing": "No hay nada que quitar. Los cambios sin guardar se conservan hasta que lleguen a tu cuenta.",
     "backupsBrowserNote": "Borrar los datos del sitio de SupoClip en este navegador también elimina estas copias y cierra tu sesión. Hazlo solo cuando todos los clips abiertos digan “Todos los cambios guardados”.",
     "done": "Listo"
+  },
+  "hookSettings": {
+    "description": "Configura el título por separado de los subtítulos. Ajusta cuándo aparece aquí o en la línea de tiempo.",
+    "show": "Mostrar título",
+    "font": "Fuente del título",
+    "size": "Tamaño del título",
+    "horizontal": "Posición horizontal del título",
+    "vertical": "Posición vertical del título",
+    "textColor": "Color del título",
+    "accentColor": "Color de énfasis del título",
+    "background": "Fondo del título",
+    "uppercase": "Título en mayúsculas",
+    "start": "Inicio del título (segundos)",
+    "end": "Fin del título (segundos)"
   }
 }
